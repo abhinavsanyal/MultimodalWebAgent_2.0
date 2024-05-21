@@ -19,7 +19,6 @@ from src.tools.save_to_file import save_to_file
 
 import openai
 from autogen.agentchat import AssistantAgent
-from autogen.agentchat.contrib.gpt_assistant_agent import GPTAssistantAgent
 from fastapi.middleware.cors import CORSMiddleware
 
 import websockets
