@@ -3,8 +3,6 @@ from pydantic import BaseModel
 import logging
 import autogen
 from autogen.agentchat.contrib.gpt_assistant_agent import GPTAssistantAgent
-from autogen.io.websockets import IOWebsockets
-from autogen.agentchat import AssistantAgent
 from src.configs.logging.logging_config import setup_logging
 from src.oai_agent.utils.load_assistant_id import load_assistant_id
 from src.oai_agent.utils.create_oai_agent import create_agent
@@ -20,20 +18,24 @@ from src.tools.analyze_content import analyze_content
 from src.tools.save_to_file import save_to_file
 
 import openai
+from autogen.agentchat import AssistantAgent
 from fastapi.middleware.cors import CORSMiddleware
+
+import websockets
 import json
 import requests
-from typing import Union, Iterable, Optional
-from websockets.exceptions import ConnectionClosed
+
+from src.webdriver.webdriver import WebDriver
+from src.tools.utils.get_webdriver_instance import get_webdriver_instance
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 class PromptRequest(BaseModel):
@@ -42,15 +44,13 @@ class PromptRequest(BaseModel):
 setup_logging()
 logger = logging.getLogger(__name__)
 
-def configure_agent(assistant_type: str, stream: bool = False) -> GPTAssistantAgent:
+def configure_agent(assistant_type: str) -> GPTAssistantAgent:
     try:
         logger.info("Configuring GPT Assistant Agent...")
         assistant_id = load_assistant_id(assistant_type)
         llm_config = GetConfig().config_list
         oai_config = {
             "config_list": llm_config["config_list"], "assistant_id": assistant_id}
-        if stream:
-            oai_config["stream"] = True
         gpt_assistant = GPTAssistantAgent(
             name=assistant_type, instructions=AssistantAgent.DEFAULT_SYSTEM_MESSAGE, llm_config=oai_config
         )
@@ -59,7 +59,7 @@ def configure_agent(assistant_type: str, stream: bool = False) -> GPTAssistantAg
     except openai.NotFoundError:
         logger.warning("Assistant not found. Creating new assistant...")
         create_agent(assistant_type)
-        return configure_agent(assistant_type, stream)
+        return configure_agent()
     except Exception as e:
         logger.error(f"Unexpected error during agent configuration: {str(e)}")
         raise
@@ -94,75 +94,23 @@ def create_user_proxy():
     logger.info("User Proxy Agent created.")
     return user_proxy
 
+
 @app.post("/get-web-agent-response")
 def get_response(prompt_request: PromptRequest):
     try:
         gpt_assistant = configure_agent("BrowsingAgent")
         register_functions(gpt_assistant)
-        user_proxy = create_user_proxy()
+        user_proxy = create_user_proxy();
         response = user_proxy.initiate_chat(gpt_assistant, message=prompt_request.prompt)
+        # get the browser instance and close the browser once done
+        # WebDriver.getInstance().closeDriver();
         return {"response": response}
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")   
+        # WebDriver.getInstance().closeDriver();
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-class FastAPIServerConnection:
-    def __init__(self, websocket: WebSocket):
-        self.websocket = websocket
-
-    async def send(self, message: Union[str, bytes, Iterable[Union[str, bytes]]]) -> None:
-        if isinstance(message, (str, bytes)):
-            await self.websocket.send_text(message if isinstance(message, str) else message.decode('utf-8'))
-        else:
-            for part in message:
-                await self.send(part)
-
-    async def recv(self, timeout: Optional[float] = None) -> str:
-        try:
-            return await self.websocket.receive_text()
-        except ConnectionClosed as e:
-            logger.error(f"Connection closed: {e}")
-            raise e
-        except Exception as e:
-            logger.error(f"Error receiving message: {e}")
-            raise e
-
-    async def close(self) -> None:
-        await self.websocket.close()
-
-async def on_connect(iostream: IOWebsockets) -> None:
-    print(f" - on_connect(): Connected to client using IOWebsockets {iostream}", flush=True)
-    print(" - on_connect(): Receiving message from client.", flush=True)
-
-    try:
-        # Receive Initial Message
-        initial_msg = await iostream.input()
-        print(f"Received initial message: {initial_msg}", flush=True)
-
-        # Instantiate GPT Assistant Agent with streaming
-        gpt_assistant = configure_agent("BrowsingAgent", stream=True)
-        register_functions(gpt_assistant)
-        user_proxy = create_user_proxy()
-
-        # Initiate conversation
-        print(
-            f" - on_connect(): Initiating chat with agent {gpt_assistant} using message '{initial_msg}'",
-            flush=True,
-        )
-        response = user_proxy.initiate_chat(gpt_assistant, message=initial_msg)
-        await iostream.output(response)
-    except Exception as e:
-        print(f"Exception in on_connect: {e}", flush=True)
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    server_conn = FastAPIServerConnection(websocket)
-    iostream = IOWebsockets(server_conn)
-    await on_connect(iostream)
 
 if __name__ == "__main__":
     import uvicorn
-    print("Running app on port 3030")
+    print("Running app on port 3000")
     uvicorn.run(app, host="0.0.0.0", port=3030)

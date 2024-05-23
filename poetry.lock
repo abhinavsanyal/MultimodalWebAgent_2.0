@@ -1053,36 +1053,44 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pyautogen"
-version = "0.2.17"
+version = "0.2.27"
 description = "Enabling Next-Gen LLM Applications via Multi-Agent Conversation Framework"
 optional = false
-python-versions = ">=3.8,<3.13"
+python-versions = "<3.13,>=3.8"
 files = [
-    {file = "pyautogen-0.2.17-py3-none-any.whl", hash = "sha256:5857c6fbc16127cf1ed47264b7b59da1cae6dfedc1ec7f483d18e15dce70b934"},
-    {file = "pyautogen-0.2.17.tar.gz", hash = "sha256:a6041eaf72dfd2c3b56ceb287121ec2f2a753c86de27da51fcd1c98f9d387877"},
+    {file = "pyautogen-0.2.27-py3-none-any.whl", hash = "sha256:9eb5c38544a0f79475c43442f9c5af2623165e32a7b9dd24ec141492f603a630"},
+    {file = "pyautogen-0.2.27.tar.gz", hash = "sha256:a8939d14fed1893109738a4c34ce490bfc6d869fd8a4ecb22932b86c81d9a5a5"},
 ]
 
 [package.dependencies]
 diskcache = "*"
 docker = "*"
 flaml = "*"
+numpy = ">=1.17.0,<2"
 openai = ">=1.3"
 pydantic = ">=1.10,<2.6.0 || >2.6.0,<3"
 python-dotenv = "*"
 termcolor = "*"
 tiktoken = "*"
+websockets = {version = ">=12.0,<13", optional = true, markers = "extra == \"websockets\""}
 
 [package.extras]
 autobuild = ["chromadb", "huggingface-hub", "sentence-transformers"]
 blendsearch = ["flaml[blendsearch]"]
+cosmosdb = ["azure-cosmos (>=4.2.0)"]
+gemini = ["google-generativeai (>=0.5,<1)", "pillow", "pydantic"]
 graph = ["matplotlib", "networkx"]
 jupyter-executor = ["ipykernel (>=6.29.0)", "jupyter-client (>=8.6.0)", "jupyter-kernel-gateway", "requests", "websocket-client"]
 lmm = ["pillow", "replicate"]
 mathchat = ["pydantic (==1.10.9)", "sympy", "wolframalpha"]
 redis = ["redis"]
-retrievechat = ["chromadb", "ipython", "pypdf", "sentence-transformers"]
+retrievechat = ["beautifulsoup4", "chromadb", "ipython", "markdownify", "pypdf", "sentence-transformers"]
+retrievechat-pgvector = ["beautifulsoup4", "chromadb", "ipython", "markdownify", "pgvector (>=0.2.5)", "psycopg (>=3.1.18)", "pypdf", "sentence-transformers"]
+retrievechat-qdrant = ["beautifulsoup4", "chromadb", "ipython", "markdownify", "pypdf", "qdrant-client[fastembed]", "sentence-transformers"]
 teachable = ["chromadb"]
-test = ["coverage (>=5.3)", "ipykernel", "nbconvert", "nbformat", "pre-commit", "pytest (>=6.1.1,<8)", "pytest-asyncio"]
+test = ["ipykernel", "nbconvert", "nbformat", "pandas", "pre-commit", "pytest (>=6.1.1,<8)", "pytest-asyncio", "pytest-cov (>=5)"]
+types = ["ipykernel (>=6.29.0)", "jupyter-client (>=8.6.0)", "jupyter-kernel-gateway", "mypy (==1.9.0)", "pytest (>=6.1.1,<8)", "requests", "websocket-client"]
+websockets = ["websockets (>=12.0,<13)"]
 websurfer = ["beautifulsoup4", "markdownify", "pathvalidate", "pdfminer.six"]
 
 [[package]]
@@ -2052,4 +2060,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "659e17187a7b433243e5ad9bd2af70af356a735cb2d01582f7984da2087b60f0"
+content-hash = "42ec8c832982e4aff6b771407291754241d42560ef856e6ef88e04b737bfb9d3"
